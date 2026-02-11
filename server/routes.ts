@@ -164,6 +164,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/donations/:id/details", async (req: Request, res: Response) => {
+    try {
+      const donation = await storage.getDonation(req.params.id);
+      if (!donation) {
+        return res.status(404).json({ message: "Donation not found" });
+      }
+      const donor = await storage.getUser(donation.userId);
+      return res.json({
+        ...donation,
+        donorName: donor?.username || "Anonymous",
+        donorEmail: donor?.email || "",
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/download-zip", (_req: Request, res: Response) => {
     const archive = archiver("zip", { zlib: { level: 9 } });
     res.setHeader("Content-Type", "application/zip");
