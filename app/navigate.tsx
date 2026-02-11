@@ -24,7 +24,6 @@ import Animated, {
 import { getApiUrl } from "@/lib/query-client";
 import NavigationMap from "@/components/NavigationMap";
 import Colors from "@/constants/colors";
-import { fetch } from "expo/fetch";
 
 export default function NavigateScreen() {
   const insets = useSafeAreaInsets();
@@ -57,27 +56,44 @@ export default function NavigateScreen() {
   }, [donationId]);
 
   async function loadData() {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === "granted") {
-        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-        setReceiverLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
-      } else {
-        setReceiverLocation({ latitude: 37.775, longitude: -122.418 });
-      }
+    const fallbackLoc = { latitude: 37.775, longitude: -122.418 };
+    let myLoc = fallbackLoc;
 
+    try {
+      if (Platform.OS === "web") {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error("timeout")), 3000);
+          navigator.geolocation.getCurrentPosition(
+            (p) => { clearTimeout(timer); resolve(p); },
+            (e) => { clearTimeout(timer); reject(e); }
+          );
+        });
+        myLoc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      } else {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          myLoc = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+        }
+      }
+    } catch {
+      myLoc = fallbackLoc;
+    }
+    setReceiverLocation(myLoc);
+
+    try {
       if (donationId) {
         const baseUrl = getApiUrl();
         const url = new URL(`/api/donations/${donationId}/details`, baseUrl);
-        const res = await fetch(url.toString(), { credentials: "include" });
+        const res = await globalThis.fetch(url.toString(), { credentials: "include" });
         if (res.ok) {
           const data = await res.json();
           setDonation(data);
 
           if (data.latitude && data.longitude) {
             const dist = calculateDistance(
-              receiverLocation?.latitude || 37.775,
-              receiverLocation?.longitude || -122.418,
+              myLoc.latitude,
+              myLoc.longitude,
               data.latitude,
               data.longitude
             );
@@ -88,7 +104,7 @@ export default function NavigateScreen() {
         }
       }
     } catch (e) {
-      console.log("Error loading navigation data:", e);
+      console.log("Error loading donation data:", e);
     }
     setLoading(false);
   }
