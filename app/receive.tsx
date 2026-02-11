@@ -115,11 +115,18 @@ function DonationCard({
           </LinearGradient>
         </Pressable>
 
+        <Pressable
+          style={cardStyles.navigateButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push({ pathname: "/navigate", params: { donationId: item.id } });
+          }}
+        >
+          <Ionicons name="navigate" size={20} color={Colors.white} />
+        </Pressable>
+
         <Pressable style={cardStyles.contactButton}>
           <Ionicons name="chatbubble-outline" size={20} color={Colors.accent} />
-        </Pressable>
-        <Pressable style={cardStyles.contactButton}>
-          <Ionicons name="call-outline" size={20} color={Colors.primary} />
         </Pressable>
       </View>
     </View>
@@ -371,6 +378,14 @@ const cardStyles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Nunito_700Bold",
     color: Colors.white,
+  },
+  navigateButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.accent,
+    justifyContent: "center",
+    alignItems: "center",
   },
   contactButton: {
     width: 44,

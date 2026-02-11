@@ -25,6 +25,7 @@ function RootLayoutNav() {
       <Stack.Screen name="donate" />
       <Stack.Screen name="donate-confirm" />
       <Stack.Screen name="receive" />
+      <Stack.Screen name="navigate" />
     </Stack>
   );
 }
